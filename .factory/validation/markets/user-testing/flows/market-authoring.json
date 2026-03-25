@@ -1,0 +1,83 @@
+{
+  "groupId": "market-authoring",
+  "assertions": [
+    "VAL-MARKET-001",
+    "VAL-MARKET-002",
+    "VAL-MARKET-003",
+    "VAL-MARKET-004",
+    "VAL-MARKET-005",
+    "VAL-MARKET-006",
+    "VAL-MARKET-007"
+  ],
+  "status": "pass",
+  "results": [
+    {
+      "assertionId": "VAL-MARKET-001",
+      "status": "pass",
+      "evidence": [
+        { "type": "automated-test", "description": "LiveView test confirms admin sees create-market form with question, options, and voting window fields" },
+        { "type": "automated-test", "description": "LiveView test confirms form has submit control" },
+        { "type": "http", "description": "HTTP smoke check: form present, question field present, options fields present, voting start/end fields present, submit button present" }
+      ]
+    },
+    {
+      "assertionId": "VAL-MARKET-002",
+      "status": "pass",
+      "evidence": [
+        { "type": "automated-test", "description": "LiveView test confirms valid submission persists market with question, trimmed options in order, and voting timestamps" },
+        { "type": "automated-test", "description": "LiveView test confirms extra blank options are ignored as long as at least 2 valid options exist" },
+        { "type": "automated-test", "description": "Domain test confirms market created with valid attributes and trimmed options in order" }
+      ]
+    },
+    {
+      "assertionId": "VAL-MARKET-003",
+      "status": "pass",
+      "evidence": [
+        { "type": "automated-test", "description": "LiveView test confirms blank question shows validation error 'can't be blank' and does not create market" },
+        { "type": "automated-test", "description": "LiveView test confirms whitespace-only question shows validation error and does not create market" },
+        { "type": "automated-test", "description": "Domain test confirms market with blank question is rejected" }
+      ]
+    },
+    {
+      "assertionId": "VAL-MARKET-004",
+      "status": "pass",
+      "evidence": [
+        { "type": "automated-test", "description": "LiveView test confirms fewer than 2 options shows 'must have at least 2 options' error" },
+        { "type": "automated-test", "description": "LiveView test confirms duplicate options (case-insensitive) shows 'must not have duplicate labels' error" },
+        { "type": "automated-test", "description": "LiveView test confirms duplicate options (case-sensitive) shows 'must not have duplicate labels' error" },
+        { "type": "automated-test", "description": "Domain tests confirm rejection for single option and duplicate options" }
+      ]
+    },
+    {
+      "assertionId": "VAL-MARKET-005",
+      "status": "pass",
+      "evidence": [
+        { "type": "automated-test", "description": "LiveView test confirms missing voting timestamps shows 'can't be blank' validation error" },
+        { "type": "automated-test", "description": "LiveView test confirms end time before start time shows 'must be after voting start' validation error" },
+        { "type": "automated-test", "description": "Domain test confirms market with voting end before voting start is rejected" }
+      ]
+    },
+    {
+      "assertionId": "VAL-MARKET-006",
+      "status": "pass",
+      "evidence": [
+        { "type": "automated-test", "description": "LiveView test confirms guest access to /admin/markets/new is redirected to /sign-in" },
+        { "type": "automated-test", "description": "LiveView test confirms non-admin access to /admin/markets/new is redirected to /dashboard" },
+        { "type": "automated-test", "description": "Tests confirm no market or option rows are created for unauthorized attempts" }
+      ]
+    },
+    {
+      "assertionId": "VAL-MARKET-007",
+      "status": "pass",
+      "evidence": [
+        { "type": "automated-test", "description": "LiveView test confirms invalid submission does not leave partial market or option rows" },
+        { "type": "automated-test", "description": "Domain test confirms atomic rejection - no partial market or options are created on invalid submission" }
+      ]
+    }
+  ],
+  "toolsUsed": ["mix test", "curl"],
+  "frictions": [
+    { "description": "CSRF token extraction from HTML requires specific pattern matching - the token appears before the name attribute", "resolution": "Used sed pattern: s/.*value=\"\\([^\"]*\\)\".*name=\"_csrf_token\".*/\\1/p" }
+  ],
+  "blockers": []
+}

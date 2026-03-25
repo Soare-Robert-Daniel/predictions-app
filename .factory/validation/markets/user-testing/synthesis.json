@@ -1,0 +1,50 @@
+{
+  "milestone": "markets",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-MARKET-001",
+    "VAL-MARKET-002",
+    "VAL-MARKET-003",
+    "VAL-MARKET-004",
+    "VAL-MARKET-005",
+    "VAL-MARKET-006",
+    "VAL-MARKET-007"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Created test users (admin@test.com and user@test.com) in dev database for HTTP smoke testing",
+      "source": "setup"
+    }
+  ],
+  "previousRound": null,
+  "validationMethod": "Phoenix automated tests (LiveView and domain tests) plus HTTP smoke checks using curl",
+  "testCommandsRun": [
+    {
+      "command": "MIX_ENV=test mix test test/predictions_web/live/admin_create_market_live_test.exs --max-cases 1 --trace",
+      "exitCode": 0,
+      "observation": "14 tests, 0 failures - All VAL-MARKET assertions passed"
+    },
+    {
+      "command": "MIX_ENV=test mix test test/predictions/markets/markets_test.exs --max-cases 1 --trace",
+      "exitCode": 0,
+      "observation": "41 tests, 0 failures - Domain tests for market creation, validation, voting, resolution, and notifications all pass"
+    }
+  ],
+  "httpSmokeChecks": [
+    {
+      "description": "VAL-MARKET-001: Admin can open create-market form",
+      "result": "Form present, question field present, options fields present, voting start/end fields present, submit button present"
+    }
+  ],
+  "notes": "All 7 market authoring assertions validated successfully. The admin-create-market-interface feature fully satisfies its validation contract. Domain tests also confirm that the market domain models support future voting, resolution, and notification features."
+}
