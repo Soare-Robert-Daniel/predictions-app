@@ -37,6 +37,7 @@ defmodule PredictionsWeb.Router do
       live "/dashboard", UserDashboardLive, :index
       live "/markets", MarketListLive, :index
       live "/markets/:id", MarketDetailLive, :show
+      live "/notifications", NotificationInboxLive, :index
     end
   end
 

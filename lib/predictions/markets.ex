@@ -497,7 +497,7 @@ defmodule Predictions.Markets do
       where: n.user_id == ^user_id,
       order_by: [desc: n.inserted_at]
     )
-    |> preload(:market)
+    |> preload(market: [:options, :winning_option])
     |> Repo.all()
   end
 
