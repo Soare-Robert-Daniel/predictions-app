@@ -38,7 +38,7 @@ Validation surface, tool choices, and concurrency limits for this mission.
 ## Flow Validator Guidance: http
 
 ### Surface Description
-HTTP-level validation against the Phoenix app at `http://127.0.0.1:4000`. Uses curl-style requests to verify auth redirects, protected-route access, session handling, and role-based access control.
+HTTP-level validation against the Phoenix app at `http://127.0.0.1:4000`. Uses curl-style requests to verify auth redirects, protected-route access, session handling, market browsing, and vote submission flows.
 
 ### Isolation Rules
 - Use the shared test users seeded in the dev database.
@@ -56,6 +56,21 @@ HTTP-level validation against the Phoenix app at `http://127.0.0.1:4000`. Uses c
 - `DELETE /sign-out` - end session
 - `GET /dashboard` - user dashboard (requires signed-in user)
 - `GET /admin` - admin dashboard (requires admin role)
+- `GET /markets` - market list (requires signed-in user)
+- `GET /markets/:id` - market detail page (requires signed-in user)
+- `GET /admin/markets/new` - admin create market form (requires admin role)
+
+### Market State Markers
+- `data-market-state="upcoming"` - market not yet open for voting
+- `data-market-state="active"` - market is open for voting
+- `data-market-state="closed"` - voting period ended, not yet resolved
+- `data-market-state="resolved"` - market has been resolved
+
+### Vote-related Markers
+- `#vote-form` - voting form for eligible users
+- `[data-already-voted]` - user has already voted marker
+- `[data-voting-unavailable]` - voting not available (outside window)
+- `[data-option-id="X"][data-vote-count="Y"]` - option vote count
 
 ### Session Handling
 - Store cookies from POST /sign-in responses in a cookie jar for subsequent requests.

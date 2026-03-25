@@ -1,0 +1,39 @@
+{
+  "milestone": "voting",
+  "round": 1,
+  "status": "pass",
+  "assertionsSummary": {
+    "total": 11,
+    "passed": 11,
+    "failed": 0,
+    "blocked": 0
+  },
+  "passedAssertions": [
+    "VAL-VOTE-001",
+    "VAL-VOTE-002",
+    "VAL-VOTE-003",
+    "VAL-VOTE-004",
+    "VAL-VOTE-005",
+    "VAL-VOTE-006",
+    "VAL-VOTE-007",
+    "VAL-VOTE-008",
+    "VAL-VOTE-009",
+    "VAL-CROSS-002",
+    "VAL-CROSS-003"
+  ],
+  "failedAssertions": [],
+  "blockedAssertions": [],
+  "appliedUpdates": [
+    {
+      "target": "user-testing.md",
+      "description": "Added market and voting endpoints, state markers, and vote-related markers to flow validator guidance",
+      "source": "setup"
+    }
+  ],
+  "previousRound": null,
+  "validationMethod": "HTTP-level checks via curl plus automated Phoenix tests (43 tests passed)",
+  "toolsUsed": ["curl", "mix test"],
+  "flowReports": [
+    ".factory/validation/voting/user-testing/flows/voting-assertions.json"
+  ]
+}
