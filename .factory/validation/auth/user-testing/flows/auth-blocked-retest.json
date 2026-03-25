@@ -1,0 +1,94 @@
+{
+  "groupId": "auth-blocked-retest",
+  "testedAt": "2026-03-25T12:35:00Z",
+  "isolation": {
+    "appUrl": "http://127.0.0.1:4000",
+    "cookieJar": "/tmp/flow-validator-auth.cookies",
+    "testUsers": {
+      "admin": { "email": "admin@test.com", "role": "admin" },
+      "normal": { "email": "user@test.com", "role": "user" }
+    }
+  },
+  "toolsUsed": ["curl"],
+  "assertions": [
+    {
+      "id": "VAL-AUTH-003",
+      "title": "Guests are blocked from signed-in market pages",
+      "status": "pass",
+      "steps": [
+        { "action": "GET /dashboard as guest", "expected": "302 redirect to sign-in", "observed": "302 redirect to sign-in page" },
+        { "action": "Follow redirect to sign-in page", "expected": "Sign-in page displayed", "observed": "Sign-in form with 'Sign in to your account' marker visible" }
+      ],
+      "evidence": {
+        "httpRequests": [
+          { "method": "GET", "url": "http://127.0.0.1:4000/dashboard", "status": 302 },
+          { "method": "GET", "url": "http://127.0.0.1:4000/sign-in (redirect target)", "status": 200 }
+        ],
+        "responseBody": "Sign-in page with form and 'Sign in to your account' header"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-AUTH-005",
+      "title": "Admin users can access admin market-management pages",
+      "status": "pass",
+      "steps": [
+        { "action": "POST /sign-in as admin@test.com", "expected": "302 redirect to /admin", "observed": "302 redirect to http://127.0.0.1:4000/admin" },
+        { "action": "GET /admin with admin session cookie", "expected": "200 with admin dashboard content", "observed": "200 with AdminDashboardLive rendered, 'Admin Dashboard' header visible" }
+      ],
+      "evidence": {
+        "httpRequests": [
+          { "method": "POST", "url": "http://127.0.0.1:4000/sign-in", "status": 302, "redirectUrl": "http://127.0.0.1:4000/admin" },
+          { "method": "GET", "url": "http://127.0.0.1:4000/admin", "status": 200 }
+        ],
+        "responseBody": "AdminDashboardLive component rendered with 'Admin Dashboard' header and 'Signed in as admin: admin@test.com' marker"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-AUTH-006",
+      "title": "Non-admin users are denied admin market-management pages",
+      "status": "pass",
+      "steps": [
+        { "action": "POST /sign-in as user@test.com", "expected": "302 redirect to /dashboard", "observed": "302 redirect to http://127.0.0.1:4000/dashboard" },
+        { "action": "GET /admin with normal user session cookie", "expected": "302 redirect (access denied)", "observed": "302 redirect to /dashboard" }
+      ],
+      "evidence": {
+        "httpRequests": [
+          { "method": "POST", "url": "http://127.0.0.1:4000/sign-in", "status": 302, "redirectUrl": "http://127.0.0.1:4000/dashboard" },
+          { "method": "GET", "url": "http://127.0.0.1:4000/admin", "status": 302, "redirectUrl": "http://127.0.0.1:4000/dashboard" }
+        ],
+        "responseBody": "Redirect to /dashboard when non-admin attempts to access /admin"
+      },
+      "issues": null
+    },
+    {
+      "id": "VAL-CROSS-001",
+      "title": "First-visit auth partitioning is consistent",
+      "status": "pass",
+      "steps": [
+        { "action": "GET / (public entry) as guest", "expected": "200 with home page", "observed": "200 with home page (title: Predictions)" },
+        { "action": "GET /sign-in as guest", "expected": "200 with sign-in page", "observed": "200 with sign-in form" },
+        { "action": "GET /dashboard (protected user route) as guest", "expected": "302 redirect to sign-in", "observed": "302 redirect to sign-in, final page shows 'Sign in to your account'" },
+        { "action": "GET /admin (protected admin route) as guest", "expected": "302 redirect to sign-in", "observed": "302 redirect to sign-in, final page shows 'Sign in to your account'" },
+        { "action": "POST /sign-in as normal user", "expected": "302 redirect to /dashboard", "observed": "302 redirect to http://127.0.0.1:4000/dashboard" },
+        { "action": "POST /sign-in as admin", "expected": "302 redirect to /admin", "observed": "302 redirect to http://127.0.0.1:4000/admin" }
+      ],
+      "evidence": {
+        "httpRequests": [
+          { "method": "GET", "url": "http://127.0.0.1:4000/", "status": 200 },
+          { "method": "GET", "url": "http://127.0.0.1:4000/sign-in", "status": 200 },
+          { "method": "GET", "url": "http://127.0.0.1:4000/dashboard", "status": 302 },
+          { "method": "GET", "url": "http://127.0.0.1:4000/admin", "status": 302 },
+          { "method": "POST", "url": "http://127.0.0.1:4000/sign-in", "status": 302, "redirectUrl": "http://127.0.0.1:4000/dashboard", "credentials": "user@test.com" },
+          { "method": "POST", "url": "http://127.0.0.1:4000/sign-in", "status": 302, "redirectUrl": "http://127.0.0.1:4000/admin", "credentials": "admin@test.com" }
+        ],
+        "responseBody": "Consistent role-based redirects: normal user -> /dashboard, admin -> /admin"
+      },
+      "issues": null
+    }
+  ],
+  "frictions": [],
+  "blockers": [],
+  "summary": "Re-tested 4 assertions after fix commit 'Fix LiveView flash bug: put live_session routes through browser pipeline'. All 4 assertions now pass: VAL-AUTH-003 (guests blocked from /dashboard), VAL-AUTH-005 (admin can access /admin), VAL-AUTH-006 (non-admin denied from /admin), VAL-CROSS-001 (first-visit auth partitioning consistent). The LiveView flash bug has been resolved."
+}
