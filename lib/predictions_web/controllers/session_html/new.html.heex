@@ -1,0 +1,21 @@
+<Layouts.app flash={@flash} current_scope={@current_user}>
+  <div class="mx-auto max-w-sm">
+    <div class="text-center pb-4">
+      <h1 class="text-lg font-semibold leading-8">Sign in to your account</h1>
+      <p class="text-sm text-base-content/70">
+        Don't have an account? Contact your administrator.
+      </p>
+    </div>
+
+    <.form for={@form} id="sign-in-form" action={~p"/sign-in"} method="post" class="space-y-4">
+      <.input field={@form[:email]} type="email" label="Email" required />
+      <.input field={@form[:password]} type="password" label="Password" required />
+
+      <div class="mt-4">
+        <.button type="submit" class="w-full">
+          Sign in <span aria-hidden="true">&rarr;</span>
+        </.button>
+      </div>
+    </.form>
+  </div>
+</Layouts.app>

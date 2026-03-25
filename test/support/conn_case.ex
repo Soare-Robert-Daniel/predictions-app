@@ -33,6 +33,21 @@ defmodule PredictionsWeb.ConnCase do
 
   setup tags do
     Predictions.DataCase.setup_sandbox(tags)
-    {:ok, conn: Phoenix.ConnTest.build_conn()}
+
+    conn =
+      Phoenix.ConnTest.build_conn()
+      |> Plug.Test.init_test_session(%{})
+      |> Phoenix.Controller.fetch_flash()
+
+    {:ok, conn: conn}
+  end
+
+  @doc """
+  Logs in a user for testing by setting up the session.
+  Use this helper to simulate an authenticated user in tests.
+  """
+  def login_user(conn, user) do
+    token = Predictions.Accounts.create_session(user)
+    Plug.Test.init_test_session(conn, user_token: token)
   end
 end

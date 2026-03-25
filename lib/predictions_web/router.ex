@@ -1,6 +1,8 @@
 defmodule PredictionsWeb.Router do
   use PredictionsWeb, :router
 
+  import PredictionsWeb.Plugs.Auth
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -8,22 +10,33 @@ defmodule PredictionsWeb.Router do
     plug :put_root_layout, html: {PredictionsWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug :fetch_current_user
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
+  # Public routes
   scope "/", PredictionsWeb do
     pipe_through :browser
 
     get "/", PageController, :home
+    get "/sign-in", SessionController, :new
+    post "/sign-in", SessionController, :create
+    delete "/sign-out", SessionController, :delete
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", PredictionsWeb do
-  #   pipe_through :api
-  # end
+  # Protected routes for signed-in users
+  live_session :user_authenticated,
+    on_mount: [{PredictionsWeb.Plugs.Auth, :ensure_authenticated}] do
+    live "/dashboard", PredictionsWeb.UserDashboardLive, :index
+  end
+
+  # Protected routes for admin users
+  live_session :admin_authenticated, on_mount: [{PredictionsWeb.Plugs.Auth, :ensure_admin}] do
+    live "/admin", PredictionsWeb.AdminDashboardLive, :index
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:predictions, :dev_routes) do
