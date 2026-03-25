@@ -12,7 +12,7 @@ defmodule Predictions.Markets.Market do
   alias Predictions.Markets.MarketOption
   alias Predictions.Markets.Vote
 
-  @type status :: :upcoming | :active | :resolved
+  @type status :: :upcoming | :active | :closed | :resolved
   @type outcome :: :majority | :tie | :no_votes | nil
 
   @type t :: %__MODULE__{
@@ -218,13 +218,20 @@ defmodule Predictions.Markets.Market do
 
   @doc """
   Returns the status of the market based on current time and resolution state.
+
+  Status transitions:
+  - :upcoming - before voting_start
+  - :active - between voting_start and voting_end
+  - :closed - after voting_end but not yet resolved
+  - :resolved - after resolution (outcome set)
   """
   @spec status(t(), DateTime.t()) :: status()
   def status(%__MODULE__{outcome: outcome}, _now) when not is_nil(outcome), do: :resolved
 
-  def status(%__MODULE__{voting_start: voting_start}, now) do
+  def status(%__MODULE__{voting_start: voting_start, voting_end: voting_end}, now) do
     cond do
       DateTime.compare(now, voting_start) == :lt -> :upcoming
+      DateTime.compare(now, voting_end) != :lt -> :closed
       true -> :active
     end
   end

@@ -71,6 +71,7 @@ defmodule PredictionsWeb.MarketListLive do
         "badge badge-sm font-medium",
         @status == :upcoming && "badge-info",
         @status == :active && "badge-success",
+        @status == :closed && "badge-warning",
         @status == :resolved && "badge-neutral"
       ]}
       data-market-state={@status}
@@ -82,6 +83,7 @@ defmodule PredictionsWeb.MarketListLive do
 
   defp format_status(:upcoming), do: "Upcoming"
   defp format_status(:active), do: "Active"
+  defp format_status(:closed), do: "Closed"
   defp format_status(:resolved), do: "Resolved"
 
   defp format_datetime(datetime) do

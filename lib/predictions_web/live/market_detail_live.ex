@@ -42,6 +42,7 @@ defmodule PredictionsWeb.MarketDetailLive do
               can_vote={@can_vote}
               options={@market.options}
               form={@vote_form}
+              market_status={@market.status}
             />
 
             <div class="mt-6 text-sm text-base-content/60">
@@ -105,18 +106,28 @@ defmodule PredictionsWeb.MarketDetailLive do
               </p>
             </div>
           </div>
-        <% @market.status != :active -> %>
-          <div class="alert alert-warning">
+        <% @market_status == :upcoming -> %>
+          <div class="alert alert-warning" data-voting-unavailable>
             <.icon name="hero-clock" class="size-5" />
             <div>
               <p class="font-semibold">Voting Not Available</p>
-              <p class="text-sm">
-                {case @market.status do
-                  :upcoming -> "Voting has not started yet."
-                  :resolved -> "This market has been resolved."
-                  _ -> "Voting is not currently available."
-                end}
-              </p>
+              <p class="text-sm">Voting has not started yet.</p>
+            </div>
+          </div>
+        <% @market_status == :closed -> %>
+          <div class="alert alert-warning" data-voting-unavailable>
+            <.icon name="hero-clock" class="size-5" />
+            <div>
+              <p class="font-semibold">Voting Not Available</p>
+              <p class="text-sm">Voting has ended for this market.</p>
+            </div>
+          </div>
+        <% @market_status == :resolved -> %>
+          <div class="alert alert-info" data-voting-unavailable>
+            <.icon name="hero-information-circle" class="size-5" />
+            <div>
+              <p class="font-semibold">Market Resolved</p>
+              <p class="text-sm">This market has been resolved.</p>
             </div>
           </div>
         <% true -> %>
@@ -152,6 +163,7 @@ defmodule PredictionsWeb.MarketDetailLive do
         "badge badge-sm font-medium",
         @status == :upcoming && "badge-info",
         @status == :active && "badge-success",
+        @status == :closed && "badge-warning",
         @status == :resolved && "badge-neutral"
       ]}
       data-market-state={@status}
@@ -163,6 +175,7 @@ defmodule PredictionsWeb.MarketDetailLive do
 
   defp format_status(:upcoming), do: "Upcoming"
   defp format_status(:active), do: "Active"
+  defp format_status(:closed), do: "Closed"
   defp format_status(:resolved), do: "Resolved"
 
   defp format_datetime(datetime) do
