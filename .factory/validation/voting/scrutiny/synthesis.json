@@ -1,0 +1,82 @@
+{
+  "milestone": "voting",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": { "passed": true, "command": "MIX_ENV=test mix test --max-cases 1", "exitCode": 0 },
+    "typecheck": { "passed": true, "command": "mix compile --warnings-as-errors", "exitCode": 0 },
+    "lint": { "passed": true, "command": "mix format --check-formatted", "exitCode": 0 }
+  },
+  "reviewsSummary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "nonBlockingIssues": [
+    {
+      "featureId": "vote-submission-and-integrity-guards",
+      "file": "lib/predictions_web/live/market_detail_live.ex",
+      "line": 38,
+      "severity": "non_blocking",
+      "description": "HTML comment syntax `<!-- Voting Section -->` used instead of HEEx comment syntax `<%!-- --%>`"
+    },
+    {
+      "featureId": "vote-submission-and-integrity-guards",
+      "file": "lib/predictions/markets.ex",
+      "line": 265,
+      "severity": "non_blocking",
+      "description": "has_unique_violation?/2 uses string matching to detect unique constraint violations which could theoretically break if Ecto's error message format changes"
+    },
+    {
+      "featureId": "voting-window-enforcement",
+      "file": "lib/predictions/markets.ex",
+      "line": 91,
+      "severity": "non_blocking",
+      "description": "@spec for market_status/2 missing :closed status in type spec"
+    },
+    {
+      "featureId": "voting-window-enforcement",
+      "file": "lib/predictions/markets/market.ex",
+      "line": 5,
+      "severity": "non_blocking",
+      "description": "@moduledoc mentions 'three states' but should mention four including :closed"
+    },
+    {
+      "featureId": "voting-window-enforcement",
+      "file": "lib/predictions_web/live/market_detail_live.ex",
+      "line": 180,
+      "severity": "non_blocking",
+      "description": "format_status/1 function duplicated in MarketListLive.ex - could be extracted to shared helper in future refactoring"
+    }
+  ],
+  "appliedUpdates": [],
+  "suggestedGuidanceUpdates": [
+    {
+      "target": "AGENTS.md",
+      "suggestion": "Add guidance about using semantic data-* attributes (e.g., data-market-state, data-option-id, data-vote-count) for test assertions in LiveView templates. This pattern enables precise element selection in tests and improves test reliability.",
+      "evidence": "user-market-browse-and-state-pages used data-* attributes extensively (data-market-state, data-option-id, data-vote-count) which enabled clean test selectors like [data-market-state='active'] in tests",
+      "isSystemic": false
+    }
+  ],
+  "rejectedObservations": [
+    {
+      "observation": "Worker correctly followed Phoenix 1.8 LiveView form handling pattern using to_form/2 and <.form for={@form}>",
+      "reason": "Already-documented - AGENTS.md already specifies these conventions"
+    },
+    {
+      "observation": "Worker correctly used cond do instead of if/else if for multiple conditions",
+      "reason": "Already-documented - AGENTS.md already forbids else if syntax"
+    },
+    {
+      "observation": "Worker correctly used [...] list syntax for class attributes with conditional classes",
+      "reason": "Already-documented - AGENTS.md already specifies this pattern"
+    },
+    {
+      "observation": "Worker followed the phoenix-fullstack-worker skill procedure correctly",
+      "reason": "Procedural confirmation, not knowledge that needs documentation"
+    }
+  ],
+  "previousRound": null
+}
