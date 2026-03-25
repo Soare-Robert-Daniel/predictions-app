@@ -20,3 +20,37 @@ Architecture notes, patterns, and implementation guidance for workers.
   - resolution checks are idempotent
 - Automatic market resolution must work within the approved boundaries: no extra infrastructure, no Docker, SQLite only.
 - When a feature needs lifecycle state in the UI, make the state explicit and consistent across list/detail surfaces: upcoming, active, resolved.
+
+## Authentication Patterns
+
+**Session key handling in on_mount callbacks:** Session keys can be serialized as either atoms or strings depending on how the session is accessed. Always handle both in on_mount callbacks:
+```elixir
+user_token = session[:user_token] || session["user_token"]
+```
+See `lib/predictions_web/plugs/auth.ex` for reference.
+
+**Timing attack prevention:** Always use `Bcrypt.no_user_verify/0` when checking passwords for non-existent users to prevent timing attacks that could reveal which emails exist in the system:
+```elixir
+def valid_password?(%User{hashed_password: hashed_password}, password)
+    when is_binary(hashed_password) and is_binary(password) do
+  Bcrypt.verify_pass(password, hashed_password)
+end
+
+def valid_password?(_, _) do
+  Bcrypt.no_user_verify()
+  false
+end
+```
+
+## Test Helpers
+
+**login_user/1 helper:** The `login_user/1` helper in `test/support/conn_case.ex` creates a session token and sets it in the test session for simulating authenticated users:
+```elixir
+def login_user(%{conn: conn} = context) do
+  user = Map.get(context, :user) || insert(:user)
+  token = Accounts.create_user_session!(user)
+  conn = Plug.Test.init_test_session(conn, user_token: token)
+  %{conn: conn, user: user}
+end
+```
+Use this pattern for any feature requiring authenticated test scenarios.

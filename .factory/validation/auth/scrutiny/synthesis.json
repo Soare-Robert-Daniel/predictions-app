@@ -1,0 +1,41 @@
+{
+  "milestone": "auth",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": { "passed": true, "command": "MIX_ENV=test mix test --max-cases 1", "exitCode": 0 },
+    "typecheck": { "passed": true, "command": "mix compile --warnings-as-errors", "exitCode": 0 },
+    "lint": { "passed": true, "command": "mix format --check-formatted", "exitCode": 0 }
+  },
+  "reviewsSummary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "file": ".factory/library/architecture.md",
+      "description": "Added authentication patterns (session key handling, timing attack prevention) and test helper documentation (login_user/1 pattern)",
+      "sourceFeature": "auth-and-role-shells"
+    }
+  ],
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [
+    {
+      "observation": "Worker correctly followed Phoenix 1.8 patterns: using Layouts.app with current_scope assign, verified_routes (~p sigil), live_session with on_mount callbacks for route protection, and to_form for form handling.",
+      "reason": "already-documented: Phoenix 1.8 patterns are already documented in AGENTS.md"
+    },
+    {
+      "observation": "Worker correctly placed authentication plugs in the browser pipeline (fetch_current_user) rather than requiring manual plug calls per route.",
+      "reason": "already-documented: Standard Phoenix convention, not a novel discovery"
+    },
+    {
+      "observation": "The phoenix-fullstack-worker skill was followed correctly: failing tests were written first, then implementation was added until tests passed.",
+      "reason": "already-documented: Skill procedure worked as intended, no skill updates needed"
+    }
+  ],
+  "previousRound": null
+}
