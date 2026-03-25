@@ -30,8 +30,11 @@ defmodule PredictionsWeb.MarketDetailLive do
                 :for={{option, vote_count} <- @options_with_counts}
                 option={option}
                 vote_count={vote_count}
+                is_winner={is_winner?(option, @market)}
               />
             </div>
+
+            <.resolved_outcome_section :if={@market.status == :resolved} market={@market} />
             
     <!-- Voting Section -->
             <.voting_section
@@ -69,12 +72,19 @@ defmodule PredictionsWeb.MarketDetailLive do
   defp option_card(assigns) do
     ~H"""
     <div
-      class="flex items-center justify-between p-4 rounded-lg bg-base-100 border border-base-300"
+      class={[
+        "flex items-center justify-between p-4 rounded-lg border",
+        @is_winner && "bg-success/10 border-success",
+        !@is_winner && "bg-base-100 border-base-300"
+      ]}
       data-option-id={@option.id}
       data-vote-count={@vote_count}
     >
       <div class="flex items-center gap-3">
         <span class="font-medium">{@option.label}</span>
+        <%= if @is_winner do %>
+          <span class="badge badge-success badge-sm">Winner</span>
+        <% end %>
       </div>
       <div class="flex items-center gap-2">
         <span class="text-sm text-base-content/60">Votes:</span>
@@ -154,6 +164,45 @@ defmodule PredictionsWeb.MarketDetailLive do
       <% end %>
     </div>
     """
+  end
+
+  defp resolved_outcome_section(assigns) do
+    ~H"""
+    <div
+      class="mt-6 pt-6 border-t border-base-300"
+      data-resolved-outcome
+      data-outcome={@market.outcome}
+    >
+      <h3 class="card-title text-lg mb-4">Outcome</h3>
+
+      <div class="alert alert-neutral">
+        <.icon name="hero-trophy" class="size-5" />
+        <div>
+          <%= case @market.outcome do %>
+            <% :majority -> %>
+              <p class="font-semibold">Winner Determined</p>
+              <p class="text-sm">
+                The outcome is: <strong>{@market.winning_option.label}</strong>
+              </p>
+            <% :tie -> %>
+              <p class="font-semibold">Tie Result</p>
+              <p class="text-sm">
+                Multiple options tied for the highest votes. No single winner was determined.
+              </p>
+            <% :no_votes -> %>
+              <p class="font-semibold">No Votes Cast</p>
+              <p class="text-sm">
+                No votes were cast for this market. No outcome was determined.
+              </p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp is_winner?(option, market) do
+    market.outcome == :majority and market.winning_option_id == option.id
   end
 
   defp market_state_badge(assigns) do

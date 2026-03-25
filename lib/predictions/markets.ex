@@ -37,6 +37,7 @@ defmodule Predictions.Markets do
   def list_markets_with_options do
     from(m in Market, order_by: [desc: m.inserted_at])
     |> preload(options: ^from(o in MarketOption, order_by: o.position))
+    |> preload(:winning_option)
     |> Repo.all()
   end
 
@@ -57,7 +58,13 @@ defmodule Predictions.Markets do
   def get_market_with_options!(id) do
     from(m in Market, where: m.id == ^id)
     |> preload(options: ^from(o in MarketOption, order_by: o.position))
+    |> maybe_preload_winning_option()
     |> Repo.one!()
+  end
+
+  # Preload winning_option for resolved markets with majority outcome
+  defp maybe_preload_winning_option(query) do
+    from(m in query, preload: :winning_option)
   end
 
   @doc """
@@ -337,8 +344,12 @@ defmodule Predictions.Markets do
       end)
       |> Repo.transaction()
       |> case do
-        {:ok, %{market: updated_market}} -> {:ok, updated_market}
-        {:error, :market, changeset, _} -> {:error, changeset}
+        {:ok, %{market: updated_market}} ->
+          # Reload with winning_option preloaded
+          {:ok, get_market_with_options!(updated_market.id)}
+
+        {:error, :market, changeset, _} ->
+          {:error, changeset}
       end
     end
   end

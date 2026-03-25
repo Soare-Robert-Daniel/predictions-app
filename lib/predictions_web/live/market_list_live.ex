@@ -48,20 +48,49 @@ defmodule PredictionsWeb.MarketListLive do
         <div class="flex flex-wrap gap-2 mt-2">
           <span
             :for={option <- @market.options}
-            class="badge badge-outline badge-sm"
+            class={[
+              "badge badge-sm",
+              is_winner?(option, @market) && "badge-success",
+              !is_winner?(option, @market) && "badge-outline"
+            ]}
           >
             {option.label}
           </span>
         </div>
 
-        <div class="text-sm text-base-content/60 mt-3">
-          <span>
-            Voting: {format_datetime(@market.voting_start)} - {format_datetime(@market.voting_end)}
-          </span>
+        <div class="flex items-center gap-4 mt-3">
+          <div class="text-sm text-base-content/60">
+            <span>
+              Voting: {format_datetime(@market.voting_start)} - {format_datetime(@market.voting_end)}
+            </span>
+          </div>
+
+          <div :if={@market.status == :resolved and @market.outcome} class="text-sm">
+            <.outcome_indicator outcome={@market.outcome} market={@market} />
+          </div>
         </div>
       </div>
     </.link>
     """
+  end
+
+  defp outcome_indicator(assigns) do
+    ~H"""
+    <span class="text-base-content/70" data-outcome={@outcome}>
+      <%= case @outcome do %>
+        <% :majority -> %>
+          <span class="text-success">Winner: {@market.winning_option.label}</span>
+        <% :tie -> %>
+          <span class="text-warning">Tie</span>
+        <% :no_votes -> %>
+          <span class="text-base-content/50">No votes</span>
+      <% end %>
+    </span>
+    """
+  end
+
+  defp is_winner?(option, market) do
+    market.outcome == :majority and market.winning_option_id == option.id
   end
 
   defp market_state_badge(assigns) do
