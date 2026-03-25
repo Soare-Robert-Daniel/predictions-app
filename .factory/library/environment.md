@@ -13,3 +13,4 @@ Environment variables, external dependencies, and setup notes.
 - Docker is not available in this environment and is out of scope for this mission.
 - Bun `1.3.9` is installed on the machine, but the project does not depend on Bun for its main runtime flow.
 - Browser automation remains unavailable for this mission because the planning dry run showed the current `agent-browser` path explicitly requires `npm`, which is not installed.
+- **SQLite quirks:** SQLite does not support Ecto's `create constraint` syntax for check constraints. Use database-level unique indexes for integrity enforcement instead of check constraints. Migrations attempting `create constraint` will fail.

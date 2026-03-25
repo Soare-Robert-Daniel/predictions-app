@@ -1,0 +1,37 @@
+{
+  "milestone": "markets",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": { "passed": true, "command": "MIX_ENV=test mix test --max-cases 1", "exitCode": 0 },
+    "typecheck": { "passed": true, "command": "mix compile --warnings-as-errors", "exitCode": 0 },
+    "lint": { "passed": true, "command": "mix format --check-formatted", "exitCode": 0 }
+  },
+  "reviewsSummary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "appliedUpdates": [
+    {
+      "target": "library/environment.md",
+      "description": "Added SQLite quirks documentation: SQLite does not support Ecto's create constraint syntax, use unique indexes instead",
+      "sourceFeature": "market-domain-models-and-validations"
+    },
+    {
+      "target": "library/architecture.md",
+      "description": "Added LiveView form patterns documentation for indexed form inputs (params arrive as maps not lists)",
+      "sourceFeature": "admin-create-market-interface"
+    }
+  ],
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [
+    {
+      "observation": "Worker modified mix.exs to add --max-cases 1 to precommit alias",
+      "reason": "already-documented - services.yaml already specifies test command with --max-cases 1"
+    }
+  ],
+  "previousRound": null
+}

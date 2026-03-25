@@ -55,3 +55,23 @@ def login_user(%{conn: conn} = context) do
 end
 ```
 Use this pattern for any feature requiring authenticated test scenarios.
+
+## LiveView Form Patterns
+
+**Indexed form inputs:** When building dynamic form inputs with indexed names (e.g., `market[options][0][label]`, `market[options][1][label]`), LiveView form params arrive as maps with string keys, not lists. Handle both formats in changeset processing:
+
+```elixir
+defp cast_options(changeset, options) when is_list(options) do
+  # Handle list format
+end
+
+defp cast_options(changeset, options) when is_map(options) do
+  # Handle map format - convert to sorted list
+  options
+  |> Enum.sort_by(fn {idx, _} -> String.to_integer(idx) end)
+  |> Enum.map(fn {_, params} -> params end)
+  # ... then process as list
+end
+```
+
+See `lib/predictions/markets/market.ex:118-132` for reference implementation.
