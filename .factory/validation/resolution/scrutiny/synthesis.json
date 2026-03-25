@@ -1,0 +1,61 @@
+{
+  "milestone": "resolution",
+  "round": 1,
+  "status": "pass",
+  "validatorsRun": {
+    "test": { "passed": true, "command": "MIX_ENV=test mix test --max-cases 1", "exitCode": 0, "observation": "177 tests, 0 failures" },
+    "typecheck": { "passed": true, "command": "mix compile --warnings-as-errors", "exitCode": 0, "observation": "Compiled successfully with no warnings" },
+    "lint": { "passed": true, "command": "mix format --check-formatted", "exitCode": 0, "observation": "All files formatted correctly" }
+  },
+  "reviewsSummary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "failedFeatures": []
+  },
+  "blockingIssues": [],
+  "nonBlockingIssues": [
+    {
+      "featureId": "resolved-market-state-presentation",
+      "severity": "non_blocking",
+      "description": "Code duplication of format_status/1 and is_winner?/2 helper functions across market_detail_live.ex and market_list_live.ex. This pattern was continued from the prior voting milestone.",
+      "suggestedFix": "Already tracked in misc-voting-code-hygiene-followups feature for deduplication."
+    },
+    {
+      "featureId": "in-app-resolution-notifications",
+      "severity": "non_blocking",
+      "description": "Defensive nil check for current_user in UserDashboardLive is unnecessary since the LiveView is behind ensure_authenticated on_mount.",
+      "suggestedFix": "Remove the dead code path in a future cleanup."
+    },
+    {
+      "featureId": "in-app-resolution-notifications",
+      "severity": "non_blocking",
+      "description": "Notifications show unread indicators but there's no UI to mark them as read when clicked. The schema and context support read state (read field, mark_notification_read/1), but the feature doesn't expose this to users.",
+      "suggestedFix": "Consider adding mark-as-read functionality in a future iteration for better UX."
+    }
+  ],
+  "appliedUpdates": [
+    {
+      "target": "library",
+      "file": ".factory/library/architecture.md",
+      "description": "Added Market Resolution Patterns section documenting the majority/tie outcome determination pattern from the automatic-market-resolution-engine feature.",
+      "sourceFeature": "automatic-market-resolution-engine"
+    }
+  ],
+  "suggestedGuidanceUpdates": [],
+  "rejectedObservations": [
+    {
+      "observation": "Worker followed the pattern of preloading associations in context queries",
+      "reason": "already-documented in architecture.md under test helpers and form patterns - common Elixir pattern"
+    },
+    {
+      "observation": "Worker correctly invoked elixir-expert skill before implementing code changes",
+      "reason": "standard skill procedure - no need to document routine workflow steps"
+    },
+    {
+      "observation": "No new services or ports were introduced",
+      "reason": "expected behavior - no action needed"
+    }
+  ],
+  "previousRound": null
+}

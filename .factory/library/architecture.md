@@ -75,3 +75,28 @@ end
 ```
 
 See `lib/predictions/markets/market.ex:118-132` for reference implementation.
+
+## Market Resolution Patterns
+
+**Majority/Tie outcome determination:** When determining outcomes from vote counts, use this clean pattern:
+1. Enumerate options with their vote counts
+2. Find the maximum count
+3. Filter for options that match the maximum
+4. Pattern match on the count of winners
+
+```elixir
+defp determine_outcome(options) do
+  option_counts = Enum.map(options, fn opt -> {opt, count_votes(opt)} end)
+  max_count = option_counts |> Enum.map(fn {_, count} -> count end) |> Enum.max(fn -> 0 end)
+
+  winners = option_counts |> Enum.filter(fn {_, count} -> count == max_count end)
+
+  case {length(winners), max_count} do
+    {1, count} when count > 0 -> {:majority, elem(hd(winners), 0).id}
+    {_, 0} -> {:no_votes, nil}
+    _ -> {:tie, nil}
+  end
+end
+```
+
+This pattern correctly handles majority (single winner), tie (multiple options with same highest count), and no-votes scenarios. See `lib/predictions/markets.ex:413-430` for reference implementation.

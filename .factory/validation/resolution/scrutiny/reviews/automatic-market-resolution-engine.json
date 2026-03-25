@@ -1,0 +1,31 @@
+{
+  "featureId": "automatic-market-resolution-engine",
+  "reviewedAt": "2026-03-25T14:30:00.000Z",
+  "commitId": "38fcaec",
+  "transcriptSkeletonReviewed": true,
+  "diffReviewed": true,
+  "status": "pass",
+  "codeReview": {
+    "summary": "The implementation correctly adds the automatic market resolution engine with winning_option_id tracking, idempotent resolution checks, batch resolution via resolve_ended_markets/0, and can_resolve_market?/1 helper. The domain logic properly handles majority, tie, and no-vote outcomes. The winning_option_id is correctly stored only for majority outcomes and nil for tie/no-votes. Idempotency is ensured through the already_resolved guard clause and the resolve_ended_markets function only processes unresolved markets. All 8 new tests cover the expected behavior comprehensively.",
+    "issues": []
+  },
+  "sharedStateObservations": [
+    {
+      "area": "conventions",
+      "observation": "The Market schema now has a belongs_to :winning_option association with on_replace: :nilify. This is a good pattern for foreign key relationships that can be cleared. The implementation correctly uses this in list_markets_with_options/0 and get_market_with_options!/1 by preloading :winning_option.",
+      "evidence": "lib/predictions/markets/market.ex:42 — belongs_to :winning_option, MarketOption, on_replace: :nilify; lib/predictions/markets.ex:53 — preload(:winning_option)"
+    },
+    {
+      "area": "skills",
+      "observation": "The worker followed the phoenix-fullstack-worker procedure correctly: invoked elixir-expert, wrote failing tests first, implemented the smallest slice needed, ran focused tests, and completed with mix precommit.",
+      "evidence": "Transcript skeleton shows TodoWrite with 'Write failing tests for resolution engine', 'Implement winning_option_id field', etc. followed by test implementation before code changes. skillFeedback.followedProcedure is true."
+    },
+    {
+      "area": "knowledge",
+      "observation": "The resolution logic pattern for determining outcomes from vote counts uses a clean approach: enumerate options with counts, find max count, filter for winners, and pattern match on count of winners. This could be documented as a reusable pattern in the library for similar majority/tie determination problems.",
+      "evidence": "lib/predictions/markets.ex:413-430 — determine_outcome/1 function shows the pattern of finding max_count, filtering winners, and using case on length(winners) to return {outcome, winning_option_id}"
+    }
+  ],
+  "addressesFailureFrom": null,
+  "summary": "PASS: The automatic market resolution engine is well-implemented with correct handling of majority/tie/no-vote outcomes, proper winning_option_id tracking for majority winners only, and idempotent resolution checks. The batch resolution function (resolve_ended_markets/0) correctly finds all ended but unresolved markets and resolves them individually, with proper idempotency guards. The can_resolve_market?/1 helper provides clean status checking. All 8 domain tests verify the expected behavior including idempotency, stability across repeated reads, and correct outcome determination. No blocking issues found."
+}
