@@ -35,6 +35,8 @@ defmodule PredictionsWeb.Router do
     live_session :user_authenticated,
       on_mount: [{PredictionsWeb.Plugs.Auth, :ensure_authenticated}] do
       live "/dashboard", UserDashboardLive, :index
+      live "/markets", MarketListLive, :index
+      live "/markets/:id", MarketDetailLive, :show
     end
   end
 
