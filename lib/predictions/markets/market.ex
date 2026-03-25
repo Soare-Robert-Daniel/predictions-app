@@ -21,10 +21,12 @@ defmodule Predictions.Markets.Market do
           voting_start: DateTime.t() | nil,
           voting_end: DateTime.t() | nil,
           outcome: outcome(),
+          winning_option_id: integer() | nil,
           resolved_at: DateTime.t() | nil,
           inserted_at: DateTime.t() | nil,
           updated_at: DateTime.t() | nil,
-          options: [MarketOption.t()] | Ecto.Association.NotLoaded.t()
+          options: [MarketOption.t()] | Ecto.Association.NotLoaded.t(),
+          winning_option: MarketOption.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "markets" do
@@ -36,6 +38,7 @@ defmodule Predictions.Markets.Market do
 
     has_many :options, MarketOption, on_replace: :delete
     has_many :votes, Vote
+    belongs_to :winning_option, MarketOption, on_replace: :nilify
 
     timestamps(type: :utc_datetime)
   end
@@ -62,12 +65,28 @@ defmodule Predictions.Markets.Market do
 
   @doc """
   Creates a changeset for resolving a market.
+
+  ## Parameters
+
+  - `market` - The market to resolve
+  - `outcome` - The resolution outcome (:majority, :tie, or :no_votes)
+  - `winning_option_id` - Optional winning option ID for majority outcomes
   """
-  def resolve_changeset(market, outcome) do
+  def resolve_changeset(market, outcome, winning_option_id \\ nil) do
     market
     |> change()
     |> put_change(:outcome, outcome)
     |> put_change(:resolved_at, DateTime.utc_now() |> DateTime.truncate(:second))
+    |> maybe_put_winning_option(outcome, winning_option_id)
+  end
+
+  defp maybe_put_winning_option(changeset, :majority, winning_option_id)
+       when is_integer(winning_option_id) do
+    put_change(changeset, :winning_option_id, winning_option_id)
+  end
+
+  defp maybe_put_winning_option(changeset, _outcome, _winning_option_id) do
+    changeset
   end
 
   defp validate_question(changeset) do

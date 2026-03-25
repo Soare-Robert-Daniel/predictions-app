@@ -476,7 +476,44 @@ defmodule Predictions.MarketsTest do
       assert resolved_market.resolved_at != nil
     end
 
-    test "tie is determined correctly", %{user1: user1, user2: user2, now: now} do
+    test "majority resolution stores winning_option_id", %{
+      user1: user1,
+      user2: user2,
+      user3: user3,
+      now: now
+    } do
+      {:ok, market} =
+        Markets.create_market(%{
+          question: "Winning option test?",
+          voting_start: now |> DateTime.add(-86400, :second),
+          voting_end: now |> DateTime.add(-3600, :second),
+          options: ["Yes", "No", "Maybe"]
+        })
+
+      option_yes = Enum.find(market.options, fn o -> o.label == "Yes" end)
+      option_no = Enum.find(market.options, fn o -> o.label == "No" end)
+
+      # 2 votes for Yes, 1 for No, 0 for Maybe
+      Repo.insert!(%Vote{
+        user_id: user1.id,
+        market_id: market.id,
+        market_option_id: option_yes.id
+      })
+
+      Repo.insert!(%Vote{
+        user_id: user2.id,
+        market_id: market.id,
+        market_option_id: option_yes.id
+      })
+
+      Repo.insert!(%Vote{user_id: user3.id, market_id: market.id, market_option_id: option_no.id})
+
+      assert {:ok, resolved_market} = Markets.resolve_market(market)
+      assert resolved_market.outcome == :majority
+      assert resolved_market.winning_option_id == option_yes.id
+    end
+
+    test "tie outcome has nil winning_option_id", %{user1: user1, user2: user2, now: now} do
       {:ok, market} =
         Markets.create_market(%{
           question: "Tie test?",
@@ -498,9 +535,10 @@ defmodule Predictions.MarketsTest do
 
       assert {:ok, resolved_market} = Markets.resolve_market(market)
       assert resolved_market.outcome == :tie
+      assert resolved_market.winning_option_id == nil
     end
 
-    test "no votes is handled correctly", %{now: now} do
+    test "no votes outcome has nil winning_option_id", %{now: now} do
       {:ok, market} =
         Markets.create_market(%{
           question: "No votes test?",
@@ -511,6 +549,7 @@ defmodule Predictions.MarketsTest do
 
       assert {:ok, resolved_market} = Markets.resolve_market(market)
       assert resolved_market.outcome == :no_votes
+      assert resolved_market.winning_option_id == nil
     end
 
     test "cannot resolve market that hasn't ended", %{now: now} do
@@ -536,6 +575,145 @@ defmodule Predictions.MarketsTest do
 
       assert {:ok, resolved_market} = Markets.resolve_market(market)
       assert {:error, :already_resolved} = Markets.resolve_market(resolved_market)
+    end
+
+    test "resolution outcome is stable across repeated reads", %{now: now} do
+      {:ok, market} =
+        Markets.create_market(%{
+          question: "Stability test?",
+          voting_start: now |> DateTime.add(-86400, :second),
+          voting_end: now |> DateTime.add(-3600, :second),
+          options: ["Yes", "No"]
+        })
+
+      assert {:ok, resolved_market} = Markets.resolve_market(market)
+
+      # Re-fetch from DB and verify stability
+      fetched_market = Markets.get_market!(resolved_market.id)
+      assert fetched_market.outcome == resolved_market.outcome
+      assert fetched_market.resolved_at == resolved_market.resolved_at
+      assert fetched_market.winning_option_id == resolved_market.winning_option_id
+    end
+  end
+
+  describe "resolve_ended_markets/0 - batch resolution" do
+    setup do
+      now = DateTime.utc_now()
+      %{now: now}
+    end
+
+    test "resolves multiple ended markets at once", %{now: now} do
+      # Create 3 ended markets
+      {:ok, market1} =
+        Markets.create_market(%{
+          question: "Ended 1?",
+          voting_start: now |> DateTime.add(-86400, :second),
+          voting_end: now |> DateTime.add(-3600, :second),
+          options: ["Yes", "No"]
+        })
+
+      {:ok, market2} =
+        Markets.create_market(%{
+          question: "Ended 2?",
+          voting_start: now |> DateTime.add(-86400, :second),
+          voting_end: now |> DateTime.add(-3600, :second),
+          options: ["Yes", "No"]
+        })
+
+      {:ok, _active_market} =
+        Markets.create_market(%{
+          question: "Still active?",
+          voting_start: now |> DateTime.add(-3600, :second),
+          voting_end: now |> DateTime.add(86400, :second),
+          options: ["Yes", "No"]
+        })
+
+      # Resolve ended markets
+      resolved_count = Markets.resolve_ended_markets()
+      assert resolved_count == 2
+
+      # Verify markets are resolved
+      assert Markets.get_market!(market1.id).outcome != nil
+      assert Markets.get_market!(market2.id).outcome != nil
+    end
+
+    test "idempotent - repeated calls do not change outcomes", %{now: now} do
+      {:ok, market} =
+        Markets.create_market(%{
+          question: "Idempotent test?",
+          voting_start: now |> DateTime.add(-86400, :second),
+          voting_end: now |> DateTime.add(-3600, :second),
+          options: ["Yes", "No"]
+        })
+
+      # First call resolves
+      assert Markets.resolve_ended_markets() == 1
+      resolved = Markets.get_market!(market.id)
+      assert resolved.outcome != nil
+
+      # Second call does nothing (already resolved)
+      assert Markets.resolve_ended_markets() == 0
+
+      # Outcome unchanged
+      still_resolved = Markets.get_market!(market.id)
+      assert still_resolved.outcome == resolved.outcome
+      assert still_resolved.resolved_at == resolved.resolved_at
+    end
+  end
+
+  describe "can_resolve_market?/1" do
+    setup do
+      now = DateTime.utc_now()
+      %{now: now}
+    end
+
+    test "returns can_resolve for ended market", %{now: now} do
+      {:ok, market} =
+        Markets.create_market(%{
+          question: "Ended?",
+          voting_start: now |> DateTime.add(-86400, :second),
+          voting_end: now |> DateTime.add(-3600, :second),
+          options: ["Yes", "No"]
+        })
+
+      assert {:ok, :can_resolve} = Markets.can_resolve_market?(market)
+    end
+
+    test "returns already_resolved for resolved market", %{now: now} do
+      {:ok, market} =
+        Markets.create_market(%{
+          question: "Already resolved?",
+          voting_start: now |> DateTime.add(-86400, :second),
+          voting_end: now |> DateTime.add(-3600, :second),
+          options: ["Yes", "No"]
+        })
+
+      {:ok, resolved} = Markets.resolve_market(market)
+      assert {:error, :already_resolved} = Markets.can_resolve_market?(resolved)
+    end
+
+    test "returns market_not_ended for active market", %{now: now} do
+      {:ok, market} =
+        Markets.create_market(%{
+          question: "Still active?",
+          voting_start: now |> DateTime.add(-3600, :second),
+          voting_end: now |> DateTime.add(86400, :second),
+          options: ["Yes", "No"]
+        })
+
+      assert {:error, :market_not_ended} = Markets.can_resolve_market?(market)
+    end
+
+    test "returns market_not_ended for upcoming market", %{now: now} do
+      {:ok, market} =
+        Markets.create_market(%{
+          question: "Upcoming?",
+          voting_start: now |> DateTime.add(3600, :second),
+          voting_end: now |> DateTime.add(86400, :second),
+          options: ["Yes", "No"]
+        })
+
+      assert {:error, :market_not_ended} = Markets.can_resolve_market?(market)
     end
   end
 

@@ -299,11 +299,16 @@ defmodule Predictions.Markets do
   Resolves a market based on vote counts.
 
   Returns:
-  - `{:majority, winning_option}` if one option has the most votes
-  - `{:tie, tied_options}` if multiple options tie for highest
-  - `:no_votes` if there are no votes
+  - `{:ok, market}` with outcome :majority if one option has the most votes
+  - `{:ok, market}` with outcome :tie if multiple options tie for highest
+  - `{:ok, market}` with outcome :no_votes if there are no votes
 
-  Does nothing if the market is already resolved.
+  Returns error if:
+  - Market is already resolved (`:already_resolved`)
+  - Market hasn't ended yet (`:market_not_ended`)
+
+  The resolution is idempotent - calling it multiple times on an already
+  resolved market will return an error without changing the outcome.
   """
   @spec resolve_market(Market.t()) ::
           {:ok, Market.t()} | {:error, :market_not_ended | :already_resolved}
@@ -320,14 +325,14 @@ defmodule Predictions.Markets do
       # Get options with vote counts
       options_with_counts = list_options_with_vote_counts(market_id)
 
-      outcome = determine_outcome(options_with_counts)
+      {outcome, winning_option_id} = determine_outcome(options_with_counts)
 
-      changeset = Market.resolve_changeset(market, outcome)
+      changeset = Market.resolve_changeset(market, outcome, winning_option_id)
 
       Ecto.Multi.new()
       |> Ecto.Multi.update(:market, changeset)
       |> Ecto.Multi.run(:notifications, fn _repo, _changes ->
-        create_resolution_notifications(market_id, outcome)
+        create_resolution_notifications(market_id, outcome, winning_option_id)
         {:ok, :created}
       end)
       |> Repo.transaction()
@@ -338,9 +343,69 @@ defmodule Predictions.Markets do
     end
   end
 
+  @doc """
+  Resolves all markets that have ended but haven't been resolved yet.
+
+  This function is idempotent - it can be called repeatedly without
+  causing duplicate resolutions or notifications.
+
+  Returns the number of markets that were resolved.
+  """
+  @spec resolve_ended_markets() :: non_neg_integer()
+  def resolve_ended_markets do
+    now = DateTime.utc_now()
+
+    # Find all markets that have ended but are not yet resolved
+    ended_unresolved =
+      from(m in Market,
+        where: is_nil(m.outcome) and m.voting_end <= ^now,
+        select: m.id
+      )
+      |> Repo.all()
+
+    # Resolve each market
+    resolved_count =
+      ended_unresolved
+      |> Enum.count(fn market_id ->
+        market = get_market!(market_id)
+        {:ok, _} = resolve_market(market)
+        true
+      end)
+
+    resolved_count
+  end
+
+  @doc """
+  Checks if a market can be resolved without actually resolving it.
+
+  Returns:
+  - `{:ok, :can_resolve}` if the market has ended and is not resolved
+  - `{:error, :already_resolved}` if already resolved
+  - `{:error, :market_not_ended}` if still active
+  """
+  @spec can_resolve_market?(Market.t()) ::
+          {:ok, :can_resolve} | {:error, :already_resolved | :market_not_ended}
+  def can_resolve_market?(%Market{outcome: outcome}) when not is_nil(outcome) do
+    {:error, :already_resolved}
+  end
+
+  def can_resolve_market?(%Market{} = market) do
+    now = DateTime.utc_now()
+
+    if Market.can_resolve?(market, now) do
+      {:ok, :can_resolve}
+    else
+      {:error, :market_not_ended}
+    end
+  end
+
+  # Determines the outcome based on vote counts.
+  # Returns {outcome, winning_option_id} where winning_option_id is:
+  # - The winning option's ID for :majority
+  # - nil for :tie and :no_votes
   defp determine_outcome(options_with_counts) do
     if Enum.empty?(options_with_counts) do
-      :no_votes
+      {:no_votes, nil}
     else
       # Get max vote count
       max_count =
@@ -349,7 +414,7 @@ defmodule Predictions.Markets do
         |> Enum.max()
 
       if max_count == 0 do
-        :no_votes
+        {:no_votes, nil}
       else
         # Find options with max count
         winners =
@@ -357,24 +422,27 @@ defmodule Predictions.Markets do
           |> Enum.filter(fn {_option, count} -> count == max_count end)
           |> Enum.map(fn {option, _count} -> option end)
 
-        if length(winners) == 1 do
-          :majority
-        else
-          :tie
+        case length(winners) do
+          1 ->
+            {:majority, hd(winners).id}
+
+          _ ->
+            {:tie, nil}
         end
       end
     end
   end
 
-  defp create_resolution_notifications(market_id, outcome) do
+  defp create_resolution_notifications(market_id, outcome, winning_option_id) do
     # Get all users who voted in this market
     user_ids =
       from(v in Vote, where: v.market_id == ^market_id, select: v.user_id)
       |> Repo.all()
 
     market = get_market_with_options!(market_id)
+    winning_option = find_option(market.options, winning_option_id)
 
-    message = resolution_message(outcome, market)
+    message = resolution_message(outcome, market, winning_option)
 
     # Create notifications for each participant
     for user_id <- user_ids do
@@ -388,27 +456,22 @@ defmodule Predictions.Markets do
     end
   end
 
-  defp resolution_message(:majority, market) do
-    winning_option =
-      market.options
-      |> Enum.filter(fn option ->
-        # Find the option with most votes
-        {:majority, option.label}
-      end)
-      |> List.first()
+  defp find_option(_options, nil), do: nil
+  defp find_option(options, option_id), do: Enum.find(options, fn o -> o.id == option_id end)
 
-    if winning_option do
-      "The market \"#{market.question}\" has resolved. The outcome is: #{winning_option.label}"
-    else
-      "The market \"#{market.question}\" has resolved."
-    end
+  defp resolution_message(:majority, market, winning_option) when not is_nil(winning_option) do
+    "The market \"#{market.question}\" has resolved. The outcome is: #{winning_option.label}"
   end
 
-  defp resolution_message(:tie, market) do
+  defp resolution_message(:majority, market, _nil) do
+    "The market \"#{market.question}\" has resolved."
+  end
+
+  defp resolution_message(:tie, market, _winning_option) do
     "The market \"#{market.question}\" has resolved in a tie."
   end
 
-  defp resolution_message(:no_votes, market) do
+  defp resolution_message(:no_votes, market, _winning_option) do
     "The market \"#{market.question}\" has resolved with no votes cast."
   end
 
