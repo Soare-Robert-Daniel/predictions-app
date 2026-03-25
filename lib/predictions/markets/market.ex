@@ -115,6 +115,22 @@ defmodule Predictions.Markets.Market do
           end)
           |> Enum.reject(&is_nil/1)
 
+        %{options: options} when is_map(options) ->
+          options
+          |> Enum.sort_by(fn {idx, _} -> String.to_integer(idx) end)
+          |> Enum.map(fn {_idx, opt} ->
+            label = get_label(opt)
+
+            if label && String.trim(label) != "" do
+              %{label: String.trim(label)}
+            else
+              nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.with_index()
+          |> Enum.map(fn {opt, idx} -> Map.put(opt, :position, idx) end)
+
         %{"options" => options} when is_list(options) ->
           options
           |> Enum.with_index()
@@ -128,6 +144,22 @@ defmodule Predictions.Markets.Market do
             end
           end)
           |> Enum.reject(&is_nil/1)
+
+        %{"options" => options} when is_map(options) ->
+          options
+          |> Enum.sort_by(fn {idx, _} -> String.to_integer(idx) end)
+          |> Enum.map(fn {_idx, opt} ->
+            label = get_label(opt)
+
+            if label && String.trim(label) != "" do
+              %{label: String.trim(label)}
+            else
+              nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.with_index()
+          |> Enum.map(fn {opt, idx} -> Map.put(opt, :position, idx) end)
 
         _ ->
           []

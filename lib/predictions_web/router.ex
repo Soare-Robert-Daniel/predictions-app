@@ -45,6 +45,7 @@ defmodule PredictionsWeb.Router do
 
     live_session :admin_authenticated, on_mount: [{PredictionsWeb.Plugs.Auth, :ensure_admin}] do
       live "/admin", AdminDashboardLive, :index
+      live "/admin/markets/new", AdminCreateMarketLive, :new
     end
   end
 
