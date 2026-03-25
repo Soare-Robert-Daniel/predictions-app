@@ -34,3 +34,30 @@ Validation surface, tool choices, and concurrency limits for this mission.
 
 - HTTP smoke checks should target `127.0.0.1:4000`.
 - Favor deterministic, role-aware fixtures so the same market can be exercised across admin creation, user voting, resolution, and notifications.
+
+## Flow Validator Guidance: http
+
+### Surface Description
+HTTP-level validation against the Phoenix app at `http://127.0.0.1:4000`. Uses curl-style requests to verify auth redirects, protected-route access, session handling, and role-based access control.
+
+### Isolation Rules
+- Use the shared test users seeded in the dev database.
+- Do NOT create additional users or modify existing user records.
+- Each flow validator operates independently and should not interfere with others since only 1 validator runs at a time.
+
+### Test Data
+- Admin user: `admin@test.com` / `password123` (role: admin)
+- Normal user: `user@test.com` / `password123` (role: user)
+
+### Key Endpoints
+- `GET /` - public home page
+- `GET /sign-in` - sign-in page (public)
+- `POST /sign-in` - submit credentials (creates session)
+- `DELETE /sign-out` - end session
+- `GET /dashboard` - user dashboard (requires signed-in user)
+- `GET /admin` - admin dashboard (requires admin role)
+
+### Session Handling
+- Store cookies from POST /sign-in responses in a cookie jar for subsequent requests.
+- Use `-c` and `-b` curl flags with a temporary cookie file per validator run.
+- Session cookies contain the user_token key for authentication.

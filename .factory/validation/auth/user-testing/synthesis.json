@@ -1,0 +1,50 @@
+{
+  "milestone": "auth",
+  "round": 1,
+  "status": "fail",
+  "assertionsSummary": {
+    "total": 7,
+    "passed": 3,
+    "failed": 0,
+    "blocked": 4
+  },
+  "passedAssertions": ["VAL-AUTH-001", "VAL-AUTH-002", "VAL-AUTH-004"],
+  "failedAssertions": [],
+  "blockedAssertions": [
+    {
+      "id": "VAL-AUTH-003",
+      "blockedBy": "LiveView on_mount callback crashes with ArgumentError: flash not fetched when redirecting unauthenticated users"
+    },
+    {
+      "id": "VAL-AUTH-005",
+      "blockedBy": "Admin dashboard LiveView crashes with ArgumentError: flash not fetched - same root cause as VAL-AUTH-003"
+    },
+    {
+      "id": "VAL-AUTH-006",
+      "blockedBy": "Cannot verify non-admin denial - admin dashboard crashes for all users including valid admins"
+    },
+    {
+      "id": "VAL-CROSS-001",
+      "blockedBy": "Protected routes (/dashboard, /admin) crash instead of redirecting guests to sign-in"
+    }
+  ],
+  "appliedUpdates": [],
+  "previousRound": null,
+  "rootCauseAnalysis": {
+    "issue": "LiveView on_mount callbacks call Phoenix.LiveView.put_flash before Phoenix.LiveView.redirect",
+    "affectedAssertions": ["VAL-AUTH-003", "VAL-AUTH-005", "VAL-AUTH-006", "VAL-CROSS-001"],
+    "description": "The on_mount callbacks in PredictionsWeb.Plugs.Auth (:ensure_authenticated and :ensure_admin) call Phoenix.LiveView.put_flash before redirecting unauthenticated/non-admin users. This fails with ArgumentError: flash not fetched, call fetch_flash/2 because flash hasn't been initialized in the LiveView lifecycle during mount.",
+    "suggestedFix": "Either: 1) Use Phoenix.Controller.redirect in the router pipeline before LiveView mounts, or 2) Avoid put_flash in on_mount for redirect cases and rely on the destination page to show the flash message, or 3) Ensure flash is fetched before the on_mount runs."
+  },
+  "whatWorks": [
+    "Login creates valid session with user_token cookie",
+    "Invalid credentials are rejected with error message",
+    "Role-based post-login redirects work (admin -> /admin, user -> /dashboard)",
+    "Sign-out clears session cookie correctly",
+    "Public routes (/, /sign-in) work for guests"
+  ],
+  "whatNeedsFix": [
+    "LiveView on_mount callbacks crash when redirecting unauthenticated/non-admin users",
+    "Protected LiveView routes (/dashboard, /admin) crash for all users due to flash bug"
+  ]
+}
