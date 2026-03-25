@@ -89,7 +89,12 @@ defmodule Predictions.MixProject do
         "esbuild predictions --minify",
         "phx.digest"
       ],
-      precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: [
+        "compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "format",
+        "test --max-cases 1"
+      ]
     ]
   end
 end
