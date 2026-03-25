@@ -28,14 +28,24 @@ defmodule PredictionsWeb.Router do
   end
 
   # Protected routes for signed-in users
-  live_session :user_authenticated,
-    on_mount: [{PredictionsWeb.Plugs.Auth, :ensure_authenticated}] do
-    live "/dashboard", PredictionsWeb.UserDashboardLive, :index
+  # Must be inside browser scope so flash is fetched before on_mount redirects
+  scope "/", PredictionsWeb do
+    pipe_through :browser
+
+    live_session :user_authenticated,
+      on_mount: [{PredictionsWeb.Plugs.Auth, :ensure_authenticated}] do
+      live "/dashboard", UserDashboardLive, :index
+    end
   end
 
   # Protected routes for admin users
-  live_session :admin_authenticated, on_mount: [{PredictionsWeb.Plugs.Auth, :ensure_admin}] do
-    live "/admin", PredictionsWeb.AdminDashboardLive, :index
+  # Must be inside browser scope so flash is fetched before on_mount redirects
+  scope "/", PredictionsWeb do
+    pipe_through :browser
+
+    live_session :admin_authenticated, on_mount: [{PredictionsWeb.Plugs.Auth, :ensure_admin}] do
+      live "/admin", AdminDashboardLive, :index
+    end
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

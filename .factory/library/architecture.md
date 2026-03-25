@@ -13,6 +13,7 @@ Architecture notes, patterns, and implementation guidance for workers.
   - `Predictions.Markets` for markets, options, votes, and resolution logic
   - `Predictions.Notifications` for in-app notifications if a separate context is helpful
 - Use Phoenix/LiveView-native flows for the UI; keep forms and interaction patterns aligned with the repo `AGENTS.md`.
+- Protected LiveView routes must be mounted through the browser pipeline / flash-aware setup; do not let conn-test flash helpers mask runtime route wiring problems.
 - Enforce key invariants in both domain logic and persistence constraints where possible:
   - one vote per user per market
   - admin users cannot vote
