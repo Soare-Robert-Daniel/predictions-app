@@ -1,0 +1,15 @@
+commands:
+  install: mix setup
+  build: mix compile
+  typecheck: mix compile --warnings-as-errors
+  test: MIX_ENV=test mix test --max-cases 1
+  lint: mix format --check-formatted
+  precommit: mix precommit
+
+services:
+  web:
+    start: PORT=4000 MIX_ENV=dev mix phx.server
+    stop: lsof -ti :4000 | xargs -r kill
+    healthcheck: curl -sf http://127.0.0.1:4000/
+    port: 4000
+    depends_on: []
